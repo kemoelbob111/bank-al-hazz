@@ -2,6 +2,15 @@
   "use strict";
 
   const STORAGE_KEY = "bankAlHazz_save_v1";
+  const APPEARANCE_KEY = "bankAlHazz_appearance_v1";
+
+  const ACCENT_SWATCHES = [
+    { id: "gold", color: "#fbbf24" },
+    { id: "emerald", color: "#34d399" },
+    { id: "royal", color: "#818cf8" },
+    { id: "sunset", color: "#fb923c" },
+    { id: "rose", color: "#f472b6" },
+  ];
   const BOARD_LEN = 28;
   const START_INDEX = 0;
   const JAIL_INDEX = 7;
@@ -67,6 +76,81 @@
   let selectedCount = 3;
 
   const $ = (sel) => document.querySelector(sel);
+
+  function defaultAppearance() {
+    return { theme: "dark", accent: "gold", brightness: 100 };
+  }
+
+  function loadAppearance() {
+    try {
+      const raw = localStorage.getItem(APPEARANCE_KEY);
+      if (!raw) return defaultAppearance();
+      return { ...defaultAppearance(), ...JSON.parse(raw) };
+    } catch {
+      return defaultAppearance();
+    }
+  }
+
+  function saveAppearance(prefs) {
+    try {
+      localStorage.setItem(APPEARANCE_KEY, JSON.stringify(prefs));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function applyAppearance(prefs) {
+    const root = document.documentElement;
+    root.dataset.theme = prefs.theme;
+    root.dataset.accent = prefs.accent;
+    root.style.setProperty("--ui-bright", String(prefs.brightness / 100));
+    document.querySelectorAll(".theme-btn").forEach((btn) => {
+      btn.classList.toggle("selected", btn.dataset.theme === prefs.theme);
+    });
+    document.querySelectorAll(".swatch").forEach((sw) => {
+      sw.classList.toggle("selected", sw.dataset.accent === prefs.accent);
+    });
+    document.querySelectorAll(".brightness-range").forEach((input) => {
+      input.value = String(prefs.brightness);
+    });
+    document.querySelectorAll(".brightness-value").forEach((el) => {
+      el.textContent = `${prefs.brightness}%`;
+    });
+  }
+
+  function updateAppearance(patch) {
+    const prefs = { ...loadAppearance(), ...patch };
+    saveAppearance(prefs);
+    applyAppearance(prefs);
+  }
+
+  function bindAppearanceControls() {
+    document.querySelectorAll(".theme-btn").forEach((btn) => {
+      btn.addEventListener("click", () => updateAppearance({ theme: btn.dataset.theme }));
+    });
+    document.querySelectorAll(".swatch").forEach((sw) => {
+      sw.addEventListener("click", () => updateAppearance({ accent: sw.dataset.accent }));
+    });
+    document.querySelectorAll(".brightness-range").forEach((input) => {
+      input.addEventListener("input", () => {
+        updateAppearance({ brightness: Number(input.value) });
+      });
+    });
+    const reset = $("#btn-reset-appearance");
+    if (reset) {
+      reset.addEventListener("click", () => {
+        const d = defaultAppearance();
+        saveAppearance(d);
+        applyAppearance(d);
+      });
+    }
+  }
+
+  function openAppearanceDialog() {
+    const dlg = $("#appearance-dialog");
+    if (dlg && typeof dlg.showModal === "function") dlg.showModal();
+  }
+
   const screens = {
     setup: $("#screen-setup"),
     game: $("#screen-game"),
@@ -807,6 +891,28 @@
     $("#log-toggle").addEventListener("click", () => {
       $("#game-log").classList.toggle("collapsed");
     });
+
+    $("#btn-appearance-game")?.addEventListener("click", openAppearanceDialog);
+  }
+
+  function fillAccentSwatches(container) {
+    if (!container || container.childElementCount) return;
+    ACCENT_SWATCHES.forEach((a) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "swatch";
+      b.dataset.accent = a.id;
+      b.style.background = a.color;
+      b.title = a.id;
+      b.setAttribute("aria-label", `لون ${a.id}`);
+      container.appendChild(b);
+    });
+  }
+
+  function initAppearancePanel() {
+    document.querySelectorAll(".accent-swatches-host").forEach(fillAccentSwatches);
+    applyAppearance(loadAppearance());
+    bindAppearanceControls();
   }
 
   function init() {
@@ -814,6 +920,9 @@
       if (!document.querySelector("#screen-setup")) {
         throw new Error("واجهة اللعبة غير مكتملة");
       }
+      document.documentElement.dataset.theme = document.documentElement.dataset.theme || "dark";
+      document.documentElement.dataset.accent = document.documentElement.dataset.accent || "gold";
+      initAppearancePanel();
       renderNameFields();
       setupListeners();
       if (loadGame()) $("#btn-resume").classList.remove("hidden");

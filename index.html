@@ -8,34 +8,115 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <script>
+    (function () {
+      try {
+        var p = JSON.parse(localStorage.getItem("bankAlHazz_appearance_v1") || "{}");
+        var r = document.documentElement;
+        r.dataset.theme = p.theme || "dark";
+        r.dataset.accent = p.accent || "gold";
+        if (p.brightness) r.style.setProperty("--ui-bright", String(p.brightness / 100));
+      } catch (e) {}
+    })();
+  </script>
   <style>
 :root {
+  --radius: 14px;
+  --radius-lg: 20px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --board-size: min(94vw, 580px);
+  --ui-bright: 1;
+  --glow: rgba(251, 191, 36, 0.15);
+  font-family: "Tajawal", "Segoe UI", Tahoma, system-ui, sans-serif;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
   --bg-deep: #050810;
   --bg: #0c1220;
   --surface: #141c2e;
   --surface-2: #1a2438;
   --surface-glass: rgba(20, 28, 46, 0.92);
-  --border: rgba(148, 163, 184, 0.12);
-  --border-strong: rgba(251, 191, 36, 0.45);
-  --primary: #fbbf24;
-  --primary-hover: #f59e0b;
-  --accent: #38bdf8;
-  --success: #4ade80;
-  --danger: #fb7185;
+  --border: rgba(148, 163, 184, 0.14);
   --text: #f8fafc;
   --text-muted: #94a3b8;
   --text-dim: #64748b;
+  --accent: #38bdf8;
+  --success: #4ade80;
+  --danger: #fb7185;
   --board-frame: #0d3d2a;
   --board-inner: #115e3a;
   --cell-bg: #fffdf7;
   --cell-text: #0f172a;
-  --radius: 14px;
-  --radius-lg: 20px;
   --shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
   --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.35);
-  --board-size: min(94vw, 580px);
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  font-family: "Tajawal", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --hero-glow: rgba(56, 189, 248, 0.12);
+  --hero-glow-2: rgba(251, 191, 36, 0.06);
+  --die-face: linear-gradient(145deg, #ffffff, #f1f5f9);
+  --die-text: #0f172a;
+  --die-shadow: #cbd5e1;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+  --bg-deep: #e2e8f0;
+  --bg: #f1f5f9;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-glass: rgba(255, 255, 255, 0.94);
+  --border: rgba(15, 23, 42, 0.1);
+  --text: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #64748b;
+  --accent: #0284c7;
+  --success: #059669;
+  --danger: #e11d48;
+  --board-frame: #166534;
+  --board-inner: #15803d;
+  --cell-bg: #fffef9;
+  --cell-text: #0f172a;
+  --shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+  --shadow-soft: 0 6px 20px rgba(15, 23, 42, 0.08);
+  --hero-glow: rgba(2, 132, 199, 0.08);
+  --hero-glow-2: rgba(245, 158, 11, 0.08);
+  --die-face: linear-gradient(145deg, #fff, #f8fafc);
+  --die-text: #0f172a;
+  --die-shadow: #94a3b8;
+}
+
+html[data-accent="gold"] {
+  --primary: #fbbf24;
+  --primary-hover: #f59e0b;
+  --border-strong: rgba(251, 191, 36, 0.5);
+  --glow: rgba(251, 191, 36, 0.18);
+}
+
+html[data-accent="emerald"] {
+  --primary: #34d399;
+  --primary-hover: #10b981;
+  --border-strong: rgba(52, 211, 153, 0.5);
+  --glow: rgba(52, 211, 153, 0.18);
+}
+
+html[data-accent="royal"] {
+  --primary: #818cf8;
+  --primary-hover: #6366f1;
+  --border-strong: rgba(129, 140, 248, 0.5);
+  --glow: rgba(129, 140, 248, 0.2);
+}
+
+html[data-accent="sunset"] {
+  --primary: #fb923c;
+  --primary-hover: #ea580c;
+  --border-strong: rgba(251, 146, 60, 0.5);
+  --glow: rgba(251, 146, 60, 0.18);
+}
+
+html[data-accent="rose"] {
+  --primary: #f472b6;
+  --primary-hover: #ec4899;
+  --border-strong: rgba(244, 114, 182, 0.5);
+  --glow: rgba(244, 114, 182, 0.18);
 }
 
 *,
@@ -51,19 +132,24 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
+  min-height: 100svh;
   background:
-    radial-gradient(ellipse 90% 60% at 50% -15%, rgba(56, 189, 248, 0.12), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 100% 50%, rgba(251, 191, 36, 0.06), transparent 50%),
+    radial-gradient(ellipse 90% 60% at 50% -15%, var(--hero-glow), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 100% 50%, var(--hero-glow-2), transparent 50%),
     linear-gradient(180deg, var(--bg-deep) 0%, var(--bg) 100%);
   color: var(--text);
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.35s var(--ease-out), color 0.25s;
 }
 
 #app {
-  max-width: 1180px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 0.75rem 1rem 2rem;
+  padding: max(0.75rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(2rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  filter: brightness(var(--ui-bright));
+  transition: filter 0.25s var(--ease-out);
 }
 
 .screen {
@@ -310,11 +396,12 @@ body {
 .game-layout {
   display: grid;
   gap: 1rem;
+  grid-template-columns: 1fr;
 }
 
 @media (min-width: 920px) {
   .game-layout {
-    grid-template-columns: 300px 1fr;
+    grid-template-columns: minmax(260px, 300px) 1fr;
     align-items: start;
   }
 }
@@ -323,6 +410,45 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+}
+
+@media (max-width: 919px) {
+  .game-layout {
+    grid-template-areas:
+      "board"
+      "players"
+      "log";
+  }
+
+  .board-wrap {
+    grid-area: board;
+  }
+
+  .sidebar {
+    grid-area: players;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 0.5rem;
+    padding-bottom: 0.35rem;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar-title {
+    display: none;
+  }
+
+  .player-card {
+    min-width: min(78vw, 260px);
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+
+  #log-panel {
+    grid-area: log;
+  }
+
+  --board-size: min(98vw, 540px);
 }
 
 .sidebar-title {
@@ -699,14 +825,14 @@ body {
 .die {
   width: 64px;
   height: 64px;
-  background: linear-gradient(145deg, #ffffff, #f1f5f9);
-  color: #0f172a;
+  background: var(--die-face);
+  color: var(--die-text);
   border-radius: 14px;
   display: grid;
   place-items: center;
   font-size: 2rem;
   font-weight: 800;
-  box-shadow: 0 6px 0 #cbd5e1, 0 10px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 6px 0 var(--die-shadow), 0 10px 24px rgba(0, 0, 0, 0.25);
   transition: transform 0.35s var(--ease-out);
 }
 
@@ -886,6 +1012,143 @@ body {
   min-width: 100px;
 }
 
+/* ——— المظهر ——— */
+.appearance-card {
+  max-width: 440px;
+  margin: 0.75rem auto 1rem;
+}
+
+.appearance-title {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.appearance-block {
+  margin-bottom: 1.1rem;
+}
+
+.appearance-block:last-child {
+  margin-bottom: 0;
+}
+
+.appearance-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.theme-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.theme-btn {
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.theme-btn.selected {
+  border-color: var(--primary);
+  background: var(--glow);
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+
+.accent-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.swatch {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s var(--ease-out), box-shadow 0.2s;
+  box-shadow: var(--shadow-soft);
+}
+
+.swatch:hover {
+  transform: scale(1.08);
+}
+
+.swatch.selected {
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary);
+}
+
+.brightness-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.brightness-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--primary);
+  height: 6px;
+}
+
+.brightness-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  min-width: 2.5rem;
+  color: var(--primary);
+  font-size: 0.9rem;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.setup-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+@media (min-width: 768px) {
+  .setup-grid {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .setup-card,
+  .appearance-card {
+    flex: 1 1 320px;
+    max-width: 420px;
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+@media (min-width: 1100px) {
+  --board-size: min(56vmin, 640px);
+}
+
 @media (max-width: 480px) {
   .die {
     width: 56px;
@@ -895,6 +1158,15 @@ body {
 
   .player-card.active-turn {
     transform: none;
+  }
+
+  .action-buttons .btn {
+    min-width: 100%;
+  }
+
+  .game-topbar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 }
 
@@ -919,19 +1191,44 @@ body {
         <p class="hero-sub">اشتروا المدن، اجمعوا الإيجار، وكونوا آخر من يبقى غير مفلس!</p>
       </header>
 
-      <div class="card setup-card">
-        <label class="field-label">عدد اللاعبين (٢–٤)</label>
-        <div class="player-count" role="group" aria-label="عدد اللاعبين">
-          <button type="button" class="count-btn" data-count="2">٢</button>
-          <button type="button" class="count-btn selected" data-count="3">٣</button>
-          <button type="button" class="count-btn" data-count="4">٤</button>
+      <div class="setup-grid">
+        <div class="card setup-card">
+          <label class="field-label">عدد اللاعبين (٢–٤)</label>
+          <div class="player-count" role="group" aria-label="عدد اللاعبين">
+            <button type="button" class="count-btn" data-count="2">٢</button>
+            <button type="button" class="count-btn selected" data-count="3">٣</button>
+            <button type="button" class="count-btn" data-count="4">٤</button>
+          </div>
+
+          <div id="name-fields" class="name-fields"></div>
+
+          <div class="setup-actions">
+            <button type="button" id="btn-resume" class="btn btn-secondary hidden">متابعة اللعبة المحفوظة</button>
+            <button type="button" id="btn-start" class="btn btn-primary">ابدأ اللعب</button>
+          </div>
         </div>
 
-        <div id="name-fields" class="name-fields"></div>
-
-        <div class="setup-actions">
-          <button type="button" id="btn-resume" class="btn btn-secondary hidden">متابعة اللعبة المحفوظة</button>
-          <button type="button" id="btn-start" class="btn btn-primary">ابدأ اللعب</button>
+        <div class="card appearance-card">
+          <h2 class="appearance-title">🎨 المظهر</h2>
+          <div class="appearance-block">
+            <span class="appearance-label">الإضاءة</span>
+            <div class="theme-toggle" role="group" aria-label="وضع الإضاءة">
+              <button type="button" class="theme-btn" data-theme="light">☀️ فاتح</button>
+              <button type="button" class="theme-btn" data-theme="dark">🌙 داكن</button>
+            </div>
+          </div>
+          <div class="appearance-block">
+            <span class="appearance-label">لون التمييز</span>
+            <div class="accent-swatches accent-swatches-host"></div>
+          </div>
+          <div class="appearance-block">
+            <label class="appearance-label" for="brightness-main">السطوع</label>
+            <div class="brightness-row">
+              <input id="brightness-main" class="brightness-range" type="range" min="85" max="115" value="100" />
+              <span class="brightness-value">100%</span>
+            </div>
+          </div>
+          <button type="button" id="btn-reset-appearance" class="btn btn-ghost">إعادة الافتراضي</button>
         </div>
       </div>
 
@@ -947,6 +1244,7 @@ body {
           <span>بنك الحظ</span>
         </div>
         <div class="topbar-actions">
+          <button type="button" id="btn-appearance-game" class="icon-btn" title="المظهر">🎨</button>
           <button type="button" id="btn-rules-game" class="icon-btn" title="القواعد">📜</button>
           <button type="button" id="btn-new-game" class="icon-btn danger" title="لعبة جديدة">🔄</button>
         </div>
@@ -988,6 +1286,33 @@ body {
     </section>
   </div>
 
+  <dialog id="appearance-dialog" class="modal">
+    <div class="modal-inner">
+      <h2>🎨 المظهر والألوان</h2>
+      <div class="appearance-block">
+        <span class="appearance-label">الإضاءة</span>
+        <div class="theme-toggle">
+          <button type="button" class="theme-btn" data-theme="light">☀️ فاتح</button>
+          <button type="button" class="theme-btn" data-theme="dark">🌙 داكن</button>
+        </div>
+      </div>
+      <div class="appearance-block">
+        <span class="appearance-label">لون التمييز</span>
+        <div class="accent-swatches accent-swatches-host"></div>
+      </div>
+      <div class="appearance-block">
+        <label class="appearance-label">السطوع</label>
+        <div class="brightness-row">
+          <input class="brightness-range" type="range" min="85" max="115" value="100" />
+          <span class="brightness-value">100%</span>
+        </div>
+      </div>
+      <form method="dialog">
+        <button type="submit" class="btn btn-primary">تم</button>
+      </form>
+    </div>
+  </dialog>
+
   <!-- نافذة القواعد -->
   <dialog id="rules-dialog" class="modal">
     <div class="modal-inner">
@@ -1021,6 +1346,15 @@ body {
   "use strict";
 
   const STORAGE_KEY = "bankAlHazz_save_v1";
+  const APPEARANCE_KEY = "bankAlHazz_appearance_v1";
+
+  const ACCENT_SWATCHES = [
+    { id: "gold", color: "#fbbf24" },
+    { id: "emerald", color: "#34d399" },
+    { id: "royal", color: "#818cf8" },
+    { id: "sunset", color: "#fb923c" },
+    { id: "rose", color: "#f472b6" },
+  ];
   const BOARD_LEN = 28;
   const START_INDEX = 0;
   const JAIL_INDEX = 7;
@@ -1086,6 +1420,81 @@ body {
   let selectedCount = 3;
 
   const $ = (sel) => document.querySelector(sel);
+
+  function defaultAppearance() {
+    return { theme: "dark", accent: "gold", brightness: 100 };
+  }
+
+  function loadAppearance() {
+    try {
+      const raw = localStorage.getItem(APPEARANCE_KEY);
+      if (!raw) return defaultAppearance();
+      return { ...defaultAppearance(), ...JSON.parse(raw) };
+    } catch {
+      return defaultAppearance();
+    }
+  }
+
+  function saveAppearance(prefs) {
+    try {
+      localStorage.setItem(APPEARANCE_KEY, JSON.stringify(prefs));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function applyAppearance(prefs) {
+    const root = document.documentElement;
+    root.dataset.theme = prefs.theme;
+    root.dataset.accent = prefs.accent;
+    root.style.setProperty("--ui-bright", String(prefs.brightness / 100));
+    document.querySelectorAll(".theme-btn").forEach((btn) => {
+      btn.classList.toggle("selected", btn.dataset.theme === prefs.theme);
+    });
+    document.querySelectorAll(".swatch").forEach((sw) => {
+      sw.classList.toggle("selected", sw.dataset.accent === prefs.accent);
+    });
+    document.querySelectorAll(".brightness-range").forEach((input) => {
+      input.value = String(prefs.brightness);
+    });
+    document.querySelectorAll(".brightness-value").forEach((el) => {
+      el.textContent = `${prefs.brightness}%`;
+    });
+  }
+
+  function updateAppearance(patch) {
+    const prefs = { ...loadAppearance(), ...patch };
+    saveAppearance(prefs);
+    applyAppearance(prefs);
+  }
+
+  function bindAppearanceControls() {
+    document.querySelectorAll(".theme-btn").forEach((btn) => {
+      btn.addEventListener("click", () => updateAppearance({ theme: btn.dataset.theme }));
+    });
+    document.querySelectorAll(".swatch").forEach((sw) => {
+      sw.addEventListener("click", () => updateAppearance({ accent: sw.dataset.accent }));
+    });
+    document.querySelectorAll(".brightness-range").forEach((input) => {
+      input.addEventListener("input", () => {
+        updateAppearance({ brightness: Number(input.value) });
+      });
+    });
+    const reset = $("#btn-reset-appearance");
+    if (reset) {
+      reset.addEventListener("click", () => {
+        const d = defaultAppearance();
+        saveAppearance(d);
+        applyAppearance(d);
+      });
+    }
+  }
+
+  function openAppearanceDialog() {
+    const dlg = $("#appearance-dialog");
+    if (dlg && typeof dlg.showModal === "function") dlg.showModal();
+  }
+
   const screens = {
     setup: $("#screen-setup"),
     game: $("#screen-game"),
@@ -1826,6 +2235,28 @@ body {
     $("#log-toggle").addEventListener("click", () => {
       $("#game-log").classList.toggle("collapsed");
     });
+
+    $("#btn-appearance-game")?.addEventListener("click", openAppearanceDialog);
+  }
+
+  function fillAccentSwatches(container) {
+    if (!container || container.childElementCount) return;
+    ACCENT_SWATCHES.forEach((a) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "swatch";
+      b.dataset.accent = a.id;
+      b.style.background = a.color;
+      b.title = a.id;
+      b.setAttribute("aria-label", `لون ${a.id}`);
+      container.appendChild(b);
+    });
+  }
+
+  function initAppearancePanel() {
+    document.querySelectorAll(".accent-swatches-host").forEach(fillAccentSwatches);
+    applyAppearance(loadAppearance());
+    bindAppearanceControls();
   }
 
   function init() {
@@ -1833,6 +2264,9 @@ body {
       if (!document.querySelector("#screen-setup")) {
         throw new Error("واجهة اللعبة غير مكتملة");
       }
+      document.documentElement.dataset.theme = document.documentElement.dataset.theme || "dark";
+      document.documentElement.dataset.accent = document.documentElement.dataset.accent || "gold";
+      initAppearancePanel();
       renderNameFields();
       setupListeners();
       if (loadGame()) $("#btn-resume").classList.remove("hidden");
