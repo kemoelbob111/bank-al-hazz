@@ -1099,6 +1099,39 @@ body {
   width: 100%;
 }
 
+.mode-btn.selected,
+.cpu-btn.selected {
+  border-color: var(--primary);
+  background: var(--glow);
+  color: var(--primary);
+}
+
+.cpu-thinking {
+  margin: 0;
+  padding: 0.65rem 1rem;
+  background: var(--glow);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  font-weight: 700;
+  color: var(--primary);
+  animation: cpuPulse 1.2s ease infinite;
+}
+
+@keyframes cpuPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+.cpu-tag {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  background: var(--glow);
+  color: var(--primary);
+  font-weight: 800;
+  vertical-align: middle;
+}
+
 .setup-grid {
   display: flex;
   flex-direction: column;

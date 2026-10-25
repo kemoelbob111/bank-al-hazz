@@ -74,6 +74,11 @@
   let state = null;
   let busy = false;
   let selectedCount = 3;
+  let gameMode = "local";
+  let cpuOpponents = 1;
+  let cpuLoopActive = false;
+
+  const CPU_NAMES = ["🤖 كمبيوتر ١", "🤖 كمبيوتر ٢", "🤖 كمبيوتر ٣"];
 
   const $ = (sel) => document.querySelector(sel);
 
@@ -176,18 +181,19 @@
     renderLog();
   }
 
-  function createInitialState(names) {
+  function createInitialState(configs) {
     const owners = new Array(BOARD_LEN).fill(null);
-    const players = names.map((name, i) => ({
+    const players = configs.map((cfg, i) => ({
       id: i,
-      name: name.trim() || `لاعب ${i + 1}`,
+      name: (cfg.name || `لاعب ${i + 1}`).trim(),
+      isCpu: !!cfg.isCpu,
       money: START_MONEY,
       position: START_INDEX,
       inJail: false,
       jailTurns: 0,
       bankrupt: false,
       color: PLAYER_COLORS[i],
-      emoji: PLAYER_EMOJI[i],
+      emoji: cfg.isCpu ? "🤖" : PLAYER_EMOJI[i],
     }));
     return {
       players,
@@ -343,16 +349,101 @@
     showScreen("win");
   }
 
+  function syncSetupModeUi() {
+    const localBlock = $("#local-player-count");
+    const cpuOpts = $("#cpu-options");
+    if (localBlock) localBlock.classList.toggle("hidden", gameMode === "cpu");
+    if (cpuOpts) cpuOpts.classList.toggle("hidden", gameMode !== "cpu");
+    renderNameFields();
+  }
+
+  function buildPlayerConfigs() {
+    const inputs = [...$("#name-fields").querySelectorAll("input")];
+    if (gameMode === "cpu") {
+      const human = inputs[0]?.value.trim() || "لاعب";
+      const configs = [{ name: human, isCpu: false }];
+      for (let i = 0; i < cpuOpponents; i++) {
+        configs.push({ name: CPU_NAMES[i], isCpu: true });
+      }
+      return configs;
+    }
+    return inputs.map((inp, i) => ({
+      name: inp.value.trim() || inp.placeholder || `لاعب ${i + 1}`,
+      isCpu: false,
+    }));
+  }
+
+  function normalizeSavedState(st) {
+    if (st?.players) {
+      st.players.forEach((p) => {
+        if (p.isCpu == null) p.isCpu = false;
+      });
+    }
+    return st;
+  }
+
+  function cpuShouldBuy(player, cell) {
+    const reserve = 220;
+    if (player.money < cell.price + reserve) return false;
+    if (player.money >= cell.price + 450) return true;
+    return cell.rent / cell.price >= 0.11;
+  }
+
+  function cpuShouldPayJail(player) {
+    if (player.money < JAIL_BAIL + 200) return false;
+    if (player.jailTurns >= 2) return true;
+    return player.money >= JAIL_BAIL + 500;
+  }
+
+  async function scheduleCpuTurn() {
+    if (!state || cpuLoopActive || busy || state.phase === "ended") return;
+    const p = currentPlayer();
+    if (!p?.isCpu || p.bankrupt) return;
+    cpuLoopActive = true;
+    try {
+      while (state && state.phase !== "ended" && !busy) {
+        const cur = currentPlayer();
+        if (!cur?.isCpu || cur.bankrupt) break;
+
+        await delay(600);
+
+        if (state.phase === "roll") {
+          if (cur.inJail && cpuShouldPayJail(cur)) {
+            payJailAndRoll();
+            await delay(450);
+            if (state.phase !== "roll") continue;
+          }
+          await doRoll();
+          await delay(350);
+          if (state.phase === "postRoll") {
+            await delay(400);
+            endTurn();
+            await delay(250);
+          }
+        } else if (state.phase === "postRoll") {
+          await delay(400);
+          endTurn();
+          await delay(250);
+        } else {
+          break;
+        }
+      }
+    } finally {
+      cpuLoopActive = false;
+    }
+  }
+
   function renderNameFields() {
     const wrap = $("#name-fields");
     wrap.innerHTML = "";
-    for (let i = 0; i < selectedCount; i++) {
+    const count = gameMode === "cpu" ? 1 : selectedCount;
+    for (let i = 0; i < count; i++) {
       const input = document.createElement("input");
       input.type = "text";
-      input.placeholder = `اسم اللاعب ${i + 1}`;
+      input.placeholder = gameMode === "cpu" ? "اسمك" : `اسم اللاعب ${i + 1}`;
       input.maxLength = 16;
       input.dataset.index = String(i);
-      input.value = `لاعب ${i + 1}`;
+      input.value = gameMode === "cpu" ? "لاعب" : `لاعب ${i + 1}`;
       wrap.appendChild(input);
     }
   }
@@ -445,12 +536,16 @@
         ? props.map((pr) => `<span title="${pr.name}">${pr.name.split(" ")[0]}</span>`).join("")
         : '<span class="empty">لا ممتلكات</span>';
 
-      const meta = p.bankrupt ? "مفلس" : p.inJail ? "في السجن" : `${props.length} مدينة`;
+      const meta = p.bankrupt
+        ? "مفلس"
+        : p.inJail
+          ? "في السجن"
+          : `${props.length} مدينة${p.isCpu ? " · 🤖" : ""}`;
 
       card.innerHTML = `
         <div class="player-head">
           <span class="player-token" style="background:${p.color}">${p.emoji}</span>
-          <span class="player-name">${p.name}</span>
+          <span class="player-name">${p.name}${p.isCpu ? ' <span class="cpu-tag">AI</span>' : ""}</span>
         </div>
         <div class="player-money">${fmt(p.money)} <small style="font-size:0.65em;opacity:0.85">د.إ</small></div>
         <div class="player-meta">${meta}</div>
@@ -482,6 +577,11 @@
 
     const jailTag = p.inJail ? '<span class="tag">سجن</span>' : "";
     banner.innerHTML = `<div class="turn-pill"><span class="turn-dot" style="background:${p.color};color:${p.color}"></span><strong>${p.name}</strong>${jailTag}</div>`;
+
+    if (p.isCpu) {
+      wrap.innerHTML = '<p class="cpu-thinking">🤖 الكمبيوتر يلعب…</p>';
+      return;
+    }
 
     if (state.phase === "roll") {
       const rollBtn = mkBtn("🎲 ارمِ النرد", "btn-primary", () => doRoll());
@@ -622,6 +722,7 @@
     saveGame();
     renderAll();
     checkWinner();
+    scheduleCpuTurn();
   }
 
   function payJailAndRoll() {
@@ -708,15 +809,21 @@
   async function handleProperty(player, idx, cell) {
     const ownerId = state.owners[idx];
     if (ownerId == null) {
-      const ok = await confirmDialog(
-        `<h3>${cell.name}</h3>
+      let ok = false;
+      if (player.isCpu) {
+        await delay(350);
+        ok = cpuShouldBuy(player, cell);
+      } else {
+        ok = await confirmDialog(
+          `<h3>${cell.name}</h3>
         <p>السعر: <strong>${fmt(cell.price)}</strong> · الإيجار: ${fmt(cell.rent)}</p>
         <p>هل تشتري هذه المدينة؟</p>`,
-        [
-          { label: "شراء", primary: true, value: true },
-          { label: "تخطي", value: false },
-        ]
-      );
+          [
+            { label: "شراء", primary: true, value: true },
+            { label: "تخطي", value: false },
+          ]
+        );
+      }
       if (ok && player.money >= cell.price) {
         player.money -= cell.price;
         state.owners[idx] = player.id;
@@ -825,10 +932,11 @@
     renderDice(null, null);
     saveGame();
     renderAll();
+    scheduleCpuTurn();
   }
 
-  function startGame(names, resumeState) {
-    state = resumeState || createInitialState(names);
+  function startGame(configs, resumeState) {
+    state = resumeState ? normalizeSavedState(resumeState) : createInitialState(configs);
     if (!state.log) state.log = [];
     if (!state.owners || state.owners.length !== BOARD_LEN) {
       state.owners = new Array(BOARD_LEN).fill(null);
@@ -839,6 +947,7 @@
     showScreen("game");
     renderDice(null, null);
     renderAll();
+    scheduleCpuTurn();
   }
 
   function setupListeners() {
@@ -851,11 +960,26 @@
       });
     });
 
+    document.querySelectorAll(".mode-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".mode-btn").forEach((b) => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        gameMode = btn.dataset.mode;
+        syncSetupModeUi();
+      });
+    });
+
+    document.querySelectorAll(".cpu-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".cpu-btn").forEach((b) => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        cpuOpponents = Number(btn.dataset.cpu);
+      });
+    });
+
     $("#btn-start").addEventListener("click", () => {
-      const inputs = [...$("#name-fields").querySelectorAll("input")];
-      const names = inputs.map((inp) => inp.value.trim() || inp.placeholder);
       clearSave();
-      startGame(names, null);
+      startGame(buildPlayerConfigs(), null);
     });
 
     $("#btn-resume").addEventListener("click", () => {
